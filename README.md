@@ -1,2 +1,3 @@
-# misc-data-visualizations
-A collection of miscellaneous data visualizations
+# Static Data Visualizations Gallery
+
+This miscellaneous collection of static data visualizations is in progress.
