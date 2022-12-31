@@ -49,20 +49,24 @@ path <- here()
 
 - The hexagonal shapefile of the United States was obtained from [Carto](https://team.carto.com/u/andrew/tables/andrew.us_states_hexgrid/public/map). It can be downloaded in other formats, such as GeoJSON.
 
-- Holtz Yan's excellent [hex bin map tutorial](https://r-graph-gallery.com/328-hexbin-map-of-the-usa.html) on The R Graph Gallery provided the data source for the hexagonal shapefile—as well as helpful hints for manipulating the file.
+- Yan Holtz's excellent [hex bin map tutorial](https://r-graph-gallery.com/328-hexbin-map-of-the-usa.html) on The R Graph Gallery provided the data source for the hexagonal shapefile—as well as helpful hints for manipulating the file.
 
 - Thanks to Bruno Kenzo for [inspiration](https://github.com/KenzoBH/Visualizations) on how to display this collection of data visualizations.
 
-- Finishing touches were created with the aid of Holtz Yan's [Pimp my RMD: a few tips for R Markdown](https://holtzy.github.io/Pimp-my-rmd/).
+- Finishing touches were created with the aid of Yan Holtz's [Pimp my RMD: a few tips for R Markdown](https://holtzy.github.io/Pimp-my-rmd/).
 
-- The color palette was created using Cara Thompson's [monochromeR package](https://github.com/cararthompson/monochromeR).
+- The color palettes were created using Cara Thompson's [monochromeR package](https://github.com/cararthompson/monochromeR) and the [Colorgorical](http://vrl.cs.brown.edu/color) tool created by Connor Gramazio with advisement from David Laidlaw and Karen Schloss.
 
 - The alt text was generated using the formula provided by Liz Hare in her October 2022 [presentation](https://lizharedogs.github.io/RLadiesNYAltText "Click here to be directed to Liz's presentation slides.") for R-Ladies NYC.
 
 
-# Lollipop Graph
+# Slopegraph
+
+```{r slopegraph}
+
+```
+
 
 
 <hr />
 <p style="text-align: center;">Created by Toyin L. Ola</p>
-<p style="text-align: center;"> <a href="https://github.com/toylyol/misc-data-viz" class="fa-solid fa-code"></a></p>

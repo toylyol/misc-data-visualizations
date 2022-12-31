@@ -1,15 +1,5 @@
-We All Count: 4 Approaches to Multiple-Race Questions
-https://weallcount.com/2022/10/27/4-approaches-to-multiple-race-questions/
 
-Posit 2022 Table Contest
-https://community.rstudio.com/tag/table-contest-2022
-
-Top R Packages for Visualizing Table Data – Make Stunning Tables in Minutes
-https://appsilon.com/top-r-packages-for-table-data/
-
-Javier Orraca's demo Shiny app for job interview
-https://github.com/JavOrraca/bslib_demo_shiny
-
+/* ---------- Source: Yan Holtz's epuRate template available at https://github.com/holtzy/epuRate/blob/master/inst/rmarkdown/templates/epurate/resources/style.css */
 
 
 
