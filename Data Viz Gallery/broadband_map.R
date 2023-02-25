@@ -24,7 +24,7 @@ broadband <- read.csv('https://raw.githubusercontent.com/rfordatascience/tidytue
 
 ## retrieve sf object using {tigris}
 
-ut_counties <- counties(state = "UT") %>%   # use default year = 2021
+ut_counties <- counties(state = "UT", year = 2019) %>%
   rmapshaper::ms_simplify()
 
 
@@ -34,45 +34,78 @@ skimr::skim(broadband)
 
 skimr::skim(ut_counties)
 
-## change data types as needed for joining
+## change data type for joining
 
 broadband$COUNTY.ID <- as.character(broadband$COUNTY.ID)
 
-broadband$BROADBAND.AVAILABILITY.PER.FCC <- as.numeric(broadband$BROADBAND.AVAILABILITY.PER.FCC)
 
-broadband$BROADBAND.USAGE <- as.numeric(broadband$BROADBAND.USAGE)
-
-
-## Merge data ----
+# Merge and clean up data ----
 
 ut_counties_sf <- ut_counties %>%
   left_join(broadband, by = c("GEOID" = "COUNTY.ID")) %>%
   select(-c("LSAD", "CLASSFP", "MTFCC", "CSAFP", "CBSAFP", "METDIVFP", "FUNCSTAT", "COUNTY.NAME")) %>%
-  rename(fcc_broadband_availability = "BROADBAND.AVAILABILITY.PER.FCC",
+  rename(fcc_broadband_avail = "BROADBAND.AVAILABILITY.PER.FCC",
          broadband_usage = "BROADBAND.USAGE")
 
-names(ut_counties_sf) <- tolower(names(ut_counties_sf)) # change case
+## change case
+
+names(ut_counties_sf) <- tolower(names(ut_counties_sf))
+
+## change data type
+
+ut_counties_sf$fcc_broadband_avail <- as.numeric(ut_counties_sf$fcc_broadband_avail)
+
+ut_counties_sf$broadband_usage <- as.numeric(ut_counties_sf$broadband_usage)
+
+
+# Create new sf object for counties comprising "Silicon Slopes" ----
+
+## Utah County geoid: "49049"
+## Salt Lake County geoid: "49035"
+## Summit County geoid: "49043"
+
+## subset counties 
+
+utah_co_sf <- ut_counties_sf[ut_counties_sf$geoid == "49049", ]
+salt_lake_co_sf <- ut_counties_sf[ut_counties_sf$geoid == "49035", ]
+summit_co_sf <- ut_counties_sf[ut_counties_sf$geoid == "49043", ]
+
+## union counties; use bind_rows() to create retain county boundaries
+
+silicon_slopes_sf <- utah_co_sf %>%
+  st_union(salt_lake_co_sf) %>%
+  st_union(summit_co_sf) %>%
+  select(name, geometry)
+
+## change name 
+
+silicon_slopes_sf$name <- "Silicon Slopes"
 
 
 # Test using mapview ----
 
 # ut_counties_sf %>%
-#   mapview(zcol = "fcc_broadband_availability")
+#   mapview(zcol = "fcc_broadband_avail)")
 # 
 # ut_counties_sf %>%
 #   mapview(zcol = "broadband_usage")
+# 
+# mapview(silicon_slopes_sf)
 
 
 # Map map ----
 
-ut_counties_sf %>%
   ggplot() +
-  geom_sf(aes(fill = broadband_usage),
+  geom_sf(data = ut_counties_sf,
+          aes(fill = broadband_usage),
           color = "white",               # change county borders
           size = 0.5) +                  # change stroke width
-  scale_fill_viridis_c()
+  scale_fill_viridis_c("Broadband\nUsage, 2019") +
+  geom_sf(data = silicon_slopes_sf,
+          color = "white",
+          size = 2,
+          alpha = 0) +     # make layer transparent
+  theme_void()
 
 
-# Use UT because it is home of "Silicon Slopes".
-# Highlight the relevant counties: Utah County (Provo), Salt Lake County (Salt Lake City), Summit County (Park City).
 # Overlay a layer with point locations for Provo, Salt Lake, and Park City.
