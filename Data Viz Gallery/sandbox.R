@@ -74,7 +74,8 @@ hex_map <- hex_map %>%
 
 hex_map <- hex_map %>%
   ggplot() +
-  geom_sf( aes(fill = Prvlnc) ) +
+  geom_sf( aes(fill = Prvlnc),
+           color = "white") +
   coord_sf() +
   theme_void()
 
@@ -99,6 +100,7 @@ hex_map <- hex_map %>%
 # https://stackoverflow.com/questions/14487188/increase-distance-between-text-and-title-on-the-y-axis
 # https://stackoverflow.com/questions/15624656/label-points-in-geom-point
 # https://github.com/rladies/meetup-presentations_freiburg/blob/master/2021-11-10_ggplot_fonts/ggplot_fonts_RLadiesFreiburg.Rmd
+# https://www.thinkingondata.com/something-about-viridis-library/
 
 
 ## Load packages and raw data ----
@@ -174,11 +176,13 @@ top_states <- data %>%
 
 top_states[[11]] <- "United States" # add aggregate US to the top_states list to use for filtering
 
+
 ### Add columns to use in formatting ggplot ----
 
 data <- data %>%
   mutate( pct_change = as.character(round(uninsured_rate_change*100, 0)) ) %>%
   mutate( line_style = ifelse(state == "United States", "dotted", "solid") ) %>%
+  mutate( pct_change = ifelse(state == "United States", NA, pct_change) ) %>%   # make this value missing for the sake of case when to color graph
   mutate( abbrev = case_when(state == "Nevada" ~ "NV",
                              state == "Oregon" ~ "OR",
                              state == "California" ~ "CA",
@@ -189,7 +193,7 @@ data <- data %>%
                              state == "Florida" ~ "FL",
                              state == "Colorado" ~ "CO",
                              state == "Washington" ~ "WA",
-                             state == "United States" ~ "USA"))
+                             state == "United States" ~ "USA") )
   
 
 ### Subset dataframe ----
@@ -215,6 +219,11 @@ df_slopegraph$date <- df_slopegraph$date %>%
 # # use view_palette(mono_palette) to see the palette in viewer
 # # put mono_palette in console to see all hex codes from darkest to lightest
 # # [1] "#0F4B63" "#6F93A1" "#CFDBDF"
+
+
+
+monochromeR::generate_palette("#2D708EFF", modification = "go_both_ways", n_colors = 3, view_palette = TRUE, 
+                              view_labels = TRUE)
 
 ### Save monochromatic color palette ----
 
@@ -242,39 +251,56 @@ minimal_palette <- c("-6" = "#CFDBDF",
                      "-10" = "#0F4B63")
 
 # Top 10 States with Largest Decrease in Percentage of Uninsured Persons after the Affordable Care Act 
-# On average, the uninsured rate in the United States decreased six percent from 2010 to 2015. The states were the <span style ='color: #0F4B63'> largest decrease </span> were California, Oregon, and Nevada.
+# On average, the uninsured rate in the United States decreased six percent from 2010 to 2015. The states were the <span style ='color: #2D708EFF'> largest decrease </span> were California, Oregon, and Nevada.
+
 
 ## Generate slopegraph ----
 
-slopegraph <- ggplot(data = df_slopegraph, aes(x = date, y = rate, group = state, color = pct_change,
-                                               linetype = line_style, label = paste0(abbrev, "  ", rate*100, "%")))  +
+slopegraph <- ggplot(data = df_slopegraph, 
+                     aes(x = date, y = rate, group = state, color = pct_change,
+                         linetype = line_style, label = paste0(abbrev, "  ", rate*100, "%")))  +
   geom_line(alpha = 1, size = 1.25) +
   geom_point(alpha = 1, size = 4) +
-  geom_text_repel() +                                               # label points directly
-  scale_color_manual(values = minimal_palette) +
+  geom_text_repel( data = df_slopegraph %>% filter(date == "2010"),
+                   hjust = "left", 
+                   fontface = "bold", 
+                   size = 3.5, 
+                   nudge_x = -.3, 
+                   direction = "y") +                # label points directly
+  geom_text_repel( data = df_slopegraph %>% filter(date == "2015"),
+                   hjust = "right",
+                   fontface = "bold", 
+                   size = 3.5, 
+                   nudge_x = .3, 
+                   direction = "y") +
+  scale_color_manual(values = case_when(df_slopegraph$pct_change == "-10" ~ "#2D708EFF",
+                                        TRUE ~ "#d3d3d3")) +
   scale_linetype_manual(values = c("solid" = "solid", 
                                    "dotted" = "dotdash")) +
+  scale_x_discrete(expand = c(0, 0)) + # remove space between plot and axis; https://ggplot2.tidyverse.org/articles/faq-axes.html#how-can-i-remove-the-space-between-the-plot-and-the-axis
   xlab("\nYear") +                                            # change axes titles, using newline to add space between axes
   ylab("Percentage of Uninsured Persons\n") +
-  labs(title = "Top 10 States with Largest Decrease in Percentage of Uninsured Persons after the Affordable Care Act",
+  labs(title = "<b>Top 10 States with Largest Decrease in Percentage of Uninsured Persons after the Affordable Care Act</b>",
        subtitle = "On average, the uninsured rate in the United States decreased six percent from 2010 to 2015. <br>The states with the <span style ='color: #0F4B63'>**largest decrease**</span> were California, Oregon, and Nevada.",
        caption = "Source: Kaggle") +
   theme_minimal() +
   theme(
+    plot.title.position = "plot",
+    axis.text.y = element_blank(), 
     panel.grid.major.y = element_blank(),                     # remove horizontal gridlines 
     panel.grid.minor.y = element_blank(),
-    plot.title = element_markdown(),                          # use {ggtext}; HTML tags will format text; markdown has to be used for bolding font-weight span style will not work
-    plot.subtitle = element_markdown()
+    plot.title = element_markdown( margin = margin(0, 0, 3, 0) ),                          # use {ggtext} to format title; HTML tags will format text; markdown has to be used for bolding font-weight span style will not work
+    plot.subtitle = element_markdown( margin = margin(0, 0, 5, 0) ),  # top, right, bottom, left
+    legend.position = "none"                                # remove legend
   )
 
 # To DO:
-# remove legends
-# remove y-axis labels, but not title
-# add point labels with state and rate
-# use dark gray font (#3d3d3d) for all text
-# fix labels
+# width: 897; height: 659
+# use dark gray font (#3d3d3d) for all text; #5d5d5d
 # add custom fonts: https://stackoverflow.com/questions/71573377/cannot-import-fonts-into-r
 # https://cran.rstudio.com/web/packages/showtext/vignettes/introduction.html
 # https://ibecav.github.io/slopegraph/
 # https://ggrepel.slowkow.com/articles/examples.html
+# https://stackoverflow.com/questions/49622822/control-colour-of-geom-text-repel
+# https://stackoverflow.com/questions/64701500/left-align-ggplot-caption (ggtext alignment)
 
