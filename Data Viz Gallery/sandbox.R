@@ -5,7 +5,12 @@
 
 ## References ----
 
-# https://r-graph-gallery.com/328-hexbin-map-of-the-usa.html
+# See hexbin map tutorial: https://r-graph-gallery.com/328-hexbin-map-of-the-usa.html
+# View MCC data dictionary: https://data.cms.gov/resources/multiple-chronic-conditions-data-dictionary
+# Retrieve CARTO hexbin US shapefile: https://team.carto.com/u/andrew/tables/andrew.us_states_hexgrid/public/map
+# Determine how to add centroids to sf object: https://r-spatial.org/r/2018/10/25/ggplot2-sf-2.html
+# See {ggtext} textbox options: https://wilkelab.org/ggtext/reference/element_textbox.html
+# Add specific limits to scale_fill_viridis_c: https://stackoverflow.com/questions/48424682/how-do-i-limit-the-range-of-the-viridis-colour-scale
 
 
 ## Load packages ----
@@ -14,6 +19,7 @@ library(fontawesome)
 library(tidyverse)
 library(openxlsx)
 library(mapview)
+library(ggtext)
 library(here)
 library(sf)
 
@@ -64,23 +70,55 @@ hex_map <- hex_map %>%
           abbrev = iso3166_2 ) %>%
   select( -c(created_at, updated_at, label, bees) ) # remove necessary columns
 
-### Join (non-spatial) with MCC data ----
+## Join (non-spatial) with MCC data ----
 
 hex_map <- hex_map %>%
   left_join( data, by = c("state_name" = "Bene_Geo_Desc") )
+
+
+## Retrieve centroid for labelling ----
+
+hex_map <-  cbind(hex_map, st_coordinates(st_centroid(hex_map)))
+
+
+## Add Google fonts ----
+
+sysfonts::font_add_google(name = "Open Sans",
+                          family = "Open Sans")
+
+showtext::showtext_auto()  # load the font; must be done every session
 
 
 ## Generate map ----
 
 hex_map <- hex_map %>%
   ggplot() +
-  geom_sf( aes(fill = Prvlnc),
-           color = "white") +
-  coord_sf() +
-  theme_void()
-
-# I started to run into issues with geom_sf_label( aes(label = abbrev) ) from https://ggplot2-book.org/maps.html...  
-# This produced an error message about using fortify().
+  geom_sf(aes(fill = Prvlnc,                                            # indicate col to make chloropleth
+              shape = "No data available"),                             # create an override value for NA values
+          color = "white") +                                            # change hexbin border colors
+  scale_fill_viridis_c(name = "Prevalence of 6+\nChronic Conditions\n",
+                       labels = scales::percent_format(),               # format the numbers in the legend
+                       na.value = "gray") +                             # specify color NA values
+  geom_text(aes(x = X,                                                  # specify long of centroid
+                y = Y,                                                  # specify lat of centroid
+                label = abbrev),                                        # indicate the col to label each hexbin
+            #fontface = "bold",
+            color = "white") +
+  guides(shape = guide_legend(override.aes = list(fill = "gray",        # add NA value to legend
+                                                  color = "white"),     # set border w/in legend
+                              order = 2,
+                              title = NULL),
+         fill = guide_colorbar(order = 1)) +                            # ensure viridis scale is first
+  labs(title = "<b>Prevalence of 6 or More Chronic Conditions among Elderly Medicare Beneficiaries Assigned Female at Birth</b>",
+       subtitle = "The prevalence of female Medicare beneficiaries aged 65 years or older with 6+ chronic conditions is highest in Oklahoma.",
+       caption = "Source: Centers for Medicare & Medicaid Services") +
+  theme_void() +
+  theme(
+    text = element_text(family = "Open Sans"),                              # set the font family for all {ggtext} elements
+    plot.title.position = "plot",                                           # help ensure title aligned with plot
+    plot.title = element_textbox_simple( margin = margin(0, 0, 3, 0) ),     # use {ggtext} to format title; HTML tags will format text; textbox will wrap automatically
+    plot.subtitle = element_textbox_simple( margin = margin(0, 0, 6, 0) ),  # note order of margins: top, right, bottom, left
+  )
 
 
 
@@ -314,7 +352,7 @@ slopegraph <- ggplot(data = df_slopegraph,
     axis.text.y = element_blank(),                                    # remove y axis labels
     panel.grid.major.y = element_blank(),                             # remove horizontal gridlines 
     panel.grid.minor.y = element_blank(),
-    plot.title = element_markdown( margin = margin(0, 0, 3, 0) ),     # use {ggtext} to format title; HTML tags will format text; markdown has to be used for bolding font-weight span style will not work
+    plot.title = element_markdown( margin = margin(0, 0, 3, 0) ),     # use {ggtext} to format title; HTML tags will format text;font-weight span style will not work for bolding
     plot.subtitle = element_markdown( margin = margin(0, 0, 6, 0) ),  # note order of margins: top, right, bottom, left
     legend.position = "none"                                          # remove legend
   )
