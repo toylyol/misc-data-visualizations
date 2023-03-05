@@ -14,6 +14,7 @@ library(sf)
 # Learn more in Broadband TidyTuesday repo: https://github.com/rfordatascience/tidytuesday/blob/master/data/2021/2021-05-11/readme.md
 # See all {tigris} functions: https://github.com/walkerke/tigris
 # Apply lesson learned from Charlie in Mapping with R (R for the Rest of Us)
+# View data from Census Bureau's new ACCESS Broadband Dashboard: https://www.census.gov/programs-surveys/community-resilience-estimates/partnerships/ntia/broadband-act.html
 
 
 # Get data ----

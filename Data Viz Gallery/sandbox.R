@@ -1,3 +1,6 @@
+#*************************************#
+# Sandbox for Static Data Viz Gallery #
+#*************************************#
 
 #***********************************************************************************************
 # HEXBIN MAP ----
@@ -11,6 +14,7 @@
 # Determine how to add centroids to sf object: https://r-spatial.org/r/2018/10/25/ggplot2-sf-2.html
 # See {ggtext} textbox options: https://wilkelab.org/ggtext/reference/element_textbox.html
 # Add specific limits to scale_fill_viridis_c: https://stackoverflow.com/questions/48424682/how-do-i-limit-the-range-of-the-viridis-colour-scale
+# See all named colors in R: http://www.stat.columbia.edu/~tzheng/files/Rcolor.pdf
 
 
 ## Load packages ----
@@ -96,20 +100,22 @@ hex_map <- hex_map %>%
   geom_sf(aes(fill = Prvlnc,                                            # indicate col to make chloropleth
               shape = "No data available"),                             # create an override value for NA values
           color = "white") +                                            # change hexbin border colors
-  scale_fill_viridis_c(name = "Prevalence of 6+\nChronic Conditions\n",
+  scale_fill_viridis_c(name = "Prevalence of 6+\nChronic Conditions\n", # give the legend a name
+                       direction = -1,                                  # reverse the scale, so darker equals larger number
                        labels = scales::percent_format(),               # format the numbers in the legend
-                       na.value = "gray") +                             # specify color NA values
+                       na.value = "gray68") +                           # specify color NA values
   geom_text(aes(x = X,                                                  # specify long of centroid
                 y = Y,                                                  # specify lat of centroid
                 label = abbrev),                                        # indicate the col to label each hexbin
             #fontface = "bold",
-            color = "white") +
-  guides(shape = guide_legend(override.aes = list(fill = "gray",        # add NA value to legend
+            color = "white",
+            family = "Open Sans") +                                     # delineate the custom font
+  guides(shape = guide_legend(override.aes = list(fill = "gray68",      # add NA value to legend
                                                   color = "white"),     # set border w/in legend
                               order = 2,
                               title = NULL),
          fill = guide_colorbar(order = 1)) +                            # ensure viridis scale is first
-  labs(title = "<b>Prevalence of 6 or More Chronic Conditions among Elderly Medicare Beneficiaries Assigned Female at Birth</b>",
+  labs(title = "<b>Prevalence of 6 or More Chronic Conditions among Elderly Medicare Beneficiaries Assigned Female at Birth, 2018</b>",
        subtitle = "The prevalence of female Medicare beneficiaries aged 65 years or older with 6+ chronic conditions is highest in Oklahoma.",
        caption = "Source: Centers for Medicare & Medicaid Services") +
   theme_void() +
