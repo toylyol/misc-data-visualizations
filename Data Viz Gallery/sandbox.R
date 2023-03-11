@@ -107,8 +107,7 @@ hex_map <- hex_map %>%
   geom_text(aes(x = X,                                                  # specify long of centroid
                 y = Y,                                                  # specify lat of centroid
                 label = abbrev),                                        # indicate the col to label each hexbin
-            #fontface = "bold",
-            color = "white",
+            color = "white",                                            # change font color
             family = "Open Sans") +                                     # delineate the custom font
   guides(shape = guide_legend(override.aes = list(fill = "gray68",      # add NA value to legend
                                                   color = "white"),     # set border w/in legend
@@ -364,3 +363,100 @@ slopegraph <- ggplot(data = df_slopegraph,
   )
 
 
+#***********************************************************************************************
+# HEATMAP ----
+
+
+## References ----
+
+# Keep only cols matching specific string: https://www.statology.org/r-select-columns-containing-string/
+# https://r-graph-gallery.com/79-levelplot-with-ggplot2.html
+# https://www.r-bloggers.com/2022/10/how-to-create-a-heatmap-in-r/
+# https://stackoverflow.com/questions/37015632/how-i-can-divide-each-column-by-a-number-in-r
+# https://www.r-bloggers.com/2013/01/the-magic-empty-bracket/
+# https://tidyr.tidyverse.org/reference/pivot_longer.html
+
+
+## Load packages and data ----
+
+library(tidyverse)
+library(openxlsx)
+library(ggtext)
+library(here)
+
+path <- here() 
+
+mcd_data <- read_csv( paste0(path, "/data/mcd_menu.csv") ) # use readr instead of base to avoid substitution of spaces for dots
+
+
+## Keep only columns with % DV ----
+
+keep_cols <- mcd_data %>%
+  select( matches("% Daily Value") ) %>%
+  names()
+
+keep_cols <- c("Category", "Item", keep_cols) # add two cols to char vector
+
+mcd_data <- mcd_data %>%
+  select( all_of(keep_cols) ) # use select helper function to avoid ambiguous-external-vector warning
+
+
+## Convert to decimals ---
+
+convertPct <- function(column){column/100}
+
+mcd_data <- mcd_data %>%
+  mutate(across(`Total Fat (% Daily Value)`:`Iron (% Daily Value)`,
+                convertPct))
+
+
+## Subset data ---- 
+
+breaky_foods <- c("Egg McMuffin", "Egg White Delight", "Sausage McMuffin", "Steak & Egg McMuffin",
+                  "Bacon, Egg & Cheese Biscuit (Regular Biscuit)", "Sausage Biscuit (Regular Biscuit)",
+                  "Southern Style Chicken Biscuit (Regular Biscuit)", "Steak & Egg Biscuit (Regular Biscuit)",
+                  "Bacon, Egg & Cheese McGriddles", "Sausage McGriddles", "Bacon, Egg & Cheese Bagel",
+                  "Steak, Egg & Cheese Bagel", "Big Breakfast (Regular Biscuit)", 
+                  "Big Breakfast with Hotcakes (Regular Biscuit)", "Hotcakes",
+                  "Cinnamon Melts", "Sausage Burrito","Fruit & Maple Oatmeal")
+
+breaky <- mcd_data %>%
+  filter(Item %in% breaky_foods) 
+
+
+## Shape data into long format ----
+
+breaky <- breaky %>%
+  pivot_longer(cols = !c(Category, Item),
+               names_to = "nutrition",
+               values_to = "pct_dv")
+
+
+## Generate heatmap ----
+
+ggplot(data = breaky, aes(x = nutrition,
+                          y = Item,
+                          fill = pct_dv)) +
+geom_tile() +
+scale_fill_viridis_c(direction = -1)
+
+
+# From an old project:
+# ggplot(df, aes(variable, FundingStream)) +
+#   geom_tile(aes(fill = value)) + 
+#   geom_text(aes(label = paste0(value,"%")), 
+#             size = 3, color = "gray27", family = "Segoe UI", show.legend = FALSE) +
+#   scale_fill_gradient(low = "#f7fafc", high = "#2b5f8e") +
+#   labs(x = "", y = "", fill = "Legend") +
+#   scale_x_discrete(expand = c(.02, 0), position = "top") +
+#   scale_y_discrete(expand = c(.02, 0), limits = rev(levels(col_name))) +
+#   theme_minimal() +
+#   theme(
+#     axis.text.x = element_text(angle = -40, hjust = 1, color = "gray27", family = "Segoe UI"),
+#     panel.border = element_rect(fill = "transparent", colour = "gray", size = .5, linetype = "solid"),
+#     panel.grid.major.x = element_blank(),
+#     panel.grid.major.y = element_blank(),
+#     legend.title = element_text(color = "gray27", family = "Segoe UI"),
+#     legend.text = element_text(color = "gray27", family = "Segoe UI")
+#   ) +
+#   coord_equal() 
