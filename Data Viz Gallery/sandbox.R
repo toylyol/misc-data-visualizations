@@ -374,8 +374,11 @@ slopegraph <- ggplot(data = df_slopegraph,
 # https://www.r-bloggers.com/2022/10/how-to-create-a-heatmap-in-r/
 # https://stackoverflow.com/questions/37015632/how-i-can-divide-each-column-by-a-number-in-r
 # https://www.r-bloggers.com/2013/01/the-magic-empty-bracket/
+# https://www.simonqueenborough.info/R/basic/lessons/lapply_and_sapply.html
 # https://tidyr.tidyverse.org/reference/pivot_longer.html
-
+# https://stackoverflow.com/questions/10686054/outlined-text-with-ggplot2
+# https://github.com/GuangchuangYu/shadowtext
+# https://stackoverflow.com/questions/72557614/define-color-and-radius-of-the-background-in-shadowtextelement-shadowtext
 
 ## Load packages and data ----
 
@@ -421,7 +424,7 @@ breaky_foods <- c("Egg McMuffin", "Egg White Delight", "Sausage McMuffin", "Stea
                   "Cinnamon Melts", "Sausage Burrito","Fruit & Maple Oatmeal")
 
 breaky <- mcd_data %>%
-  filter(Item %in% breaky_foods) 
+  filter(Item %in% breaky_foods)
 
 
 ## Shape data into long format ----
@@ -431,32 +434,48 @@ breaky <- breaky %>%
                names_to = "nutrition",
                values_to = "pct_dv")
 
+breaky$Item <- str_replace_all(breaky$Item, "Regular Biscuit", "Regular")
+
+breaky$nutrition <- str_replace_all(breaky$nutrition, " \\(% Daily Value\\)", "") 
+
+
+## Add Google fonts ----
+
+sysfonts::font_add_google(name = "Open Sans",
+                          family = "Open Sans")
+
+showtext::showtext_auto()  # load the font; must be done every session
+
 
 ## Generate heatmap ----
 
-ggplot(data = breaky, aes(x = nutrition,
-                          y = Item,
-                          fill = pct_dv)) +
-geom_tile() +
-scale_fill_viridis_c(direction = -1)
+ggplot(data = breaky, 
+       aes(x = nutrition,
+           y = Item,
+           fill = pct_dv)) +
+geom_tile(color = "white",                             # add white border
+          size = 0.01) +
+geom_shadowtext(aes(label = paste0(pct_dv*100, "%")),  # format pct_dv as percent 
+                bg.color="gray37",                     # specify color of shadow
+                bg.r=0.1,                              # specify radius of shadow
+                color = "white",
+                size = 2) +
+scale_fill_viridis_c(direction = -1) +
+scale_x_discrete(expand = c(0, 0)) +                   # remove space between plot and axis
+labs(x = "", y = "",                                   # remove titles from x and y axes
+     title = "<b>McDonald's 'Big Breakfast' is a high-cholestrol start to the day.<b>",
+     subtitle = "Of the breakfast items listed, the 'Big Breakfast' with or without hotcakes<br>has the worst nutritional value.") +
+theme_minimal() +
+theme(text = element_text(family = "Open Sans",
+                          color = "gray27"),
+      axis.text.x = element_text(angle = -40,          # angle the x-axis text
+                                 vjust = -0.15,
+                                 hjust = -0.01),
+      plot.title.position = "plot", 
+      plot.title = element_markdown( margin = margin(0, 0, 3, 0) ),
+      plot.subtitle = element_markdown( margin = margin(0, 0, 6, 0) ),
+      legend.position = "none") +
+coord_fixed()                                          # keep tiles square
 
 
-# From an old project:
-# ggplot(df, aes(variable, FundingStream)) +
-#   geom_tile(aes(fill = value)) + 
-#   geom_text(aes(label = paste0(value,"%")), 
-#             size = 3, color = "gray27", family = "Segoe UI", show.legend = FALSE) +
-#   scale_fill_gradient(low = "#f7fafc", high = "#2b5f8e") +
-#   labs(x = "", y = "", fill = "Legend") +
-#   scale_x_discrete(expand = c(.02, 0), position = "top") +
-#   scale_y_discrete(expand = c(.02, 0), limits = rev(levels(col_name))) +
-#   theme_minimal() +
-#   theme(
-#     axis.text.x = element_text(angle = -40, hjust = 1, color = "gray27", family = "Segoe UI"),
-#     panel.border = element_rect(fill = "transparent", colour = "gray", size = .5, linetype = "solid"),
-#     panel.grid.major.x = element_blank(),
-#     panel.grid.major.y = element_blank(),
-#     legend.title = element_text(color = "gray27", family = "Segoe UI"),
-#     legend.text = element_text(color = "gray27", family = "Segoe UI")
-#   ) +
-#   coord_equal() 
+
