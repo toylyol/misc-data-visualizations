@@ -15,7 +15,13 @@
 # See {ggtext} textbox options: https://wilkelab.org/ggtext/reference/element_textbox.html
 # Add specific limits to scale_fill_viridis_c: https://stackoverflow.com/questions/48424682/how-do-i-limit-the-range-of-the-viridis-colour-scale
 # See all named colors in R: http://www.stat.columbia.edu/~tzheng/files/Rcolor.pdf
-
+# See known issue with spacing in bold text with {ggtext}: https://stackoverflow.com/questions/72161118/error-rendering-spaces-in-bold-title-using-ggtext-and-ggplot2
+# See issue: https://github.com/rstudio/rstudio/issues/7010
+# See issue fix: https://github.com/wilkelab/ggtext/issues/83
+# See finishing touches possibilities for legend: https://www.cedricscherer.com/slides/OutlierConf2021_ggplot-wizardry.pdf
+# See how to change caption position: https://community.rstudio.com/t/changing-position-of-plot-captions/108973/2
+# See legend position options: https://r-graph-gallery.com/239-custom-layout-legend-ggplot2.html
+# See guide_legend() options: https://ggplot2.tidyverse.org/reference/guide_legend.html
 
 ## Load packages ----
 
@@ -100,7 +106,7 @@ hex_map <- hex_map %>%
   geom_sf(aes(fill = Prvlnc,                                            # indicate col to make chloropleth
               shape = "No data available"),                             # create an override value for NA values
           color = "white") +                                            # change hexbin border colors
-  scale_fill_viridis_c(name = "Prevalence of 6+\nChronic Conditions\n", # give the legend a name
+  scale_fill_viridis_c(name = "Prevalence of 6+ Chronic Conditions",    # give the legend a name
                        direction = -1,                                  # reverse the scale, so darker equals larger number
                        labels = scales::percent_format(),               # format the numbers in the legend
                        na.value = "gray68") +                           # specify color NA values
@@ -113,19 +119,27 @@ hex_map <- hex_map %>%
                                                   color = "white"),     # set border w/in legend
                               order = 2,
                               title = NULL),
-         fill = guide_colorbar(order = 1)) +                            # ensure viridis scale is first
-  labs(title = "<b>Prevalence of 6 or More Chronic Conditions among Elderly Medicare Beneficiaries Assigned Female at Birth, 2018</b>",
-       subtitle = "The prevalence of female Medicare beneficiaries aged 65 years or older with 6+ chronic conditions is highest in Oklahoma.",
+         fill = guide_colorbar(title.position = 'top',                                      # move legend title to top
+                               title.hjust = .5, title.theme = element_text(size = 9),      # use code to alter viridis color bar from Cédric Scherer
+                               barwidth = unit(20, 'lines'), barheight = unit(.5, 'lines'), 
+                               order = 1)) +                                                # ensure viridis scale is first
+  labs(title = "In 2018, Okalahoma had the high prevalence of elderly, female Medicare enrollees with 6+ chronic conditions.",
+       subtitle = "The prevalence of six or more chronic conditions in Medicare beneficiaries assigned female at birth aged 65 years or older was 20.5% in OK in 2018.",
        caption = "Source: Centers for Medicare & Medicaid Services") +
   theme_void() +
   theme(
     text = element_text(family = "Open Sans"),                              # set the font family for all {ggtext} elements
     plot.title.position = "plot",                                           # help ensure title aligned with plot
-    plot.title = element_textbox_simple( margin = margin(0, 0, 3, 0) ),     # use {ggtext} to format title; HTML tags will format text; textbox will wrap automatically
+    plot.caption.position = "plot",                                         # move caption to be right-aligned with plot
+    plot.title = element_textbox_simple( face = "bold",                     # use {ggtext} to format title; HTML tags will format text; textbox will wrap automatically
+                                         margin = margin(0, 0, 3, 0) ),     
     plot.subtitle = element_textbox_simple( margin = margin(0, 0, 6, 0) ),  # note order of margins: top, right, bottom, left
-  )
+    legend.position = "top",                                                # move legend above map
+    legend.text = element_text(size = 8),                                   # size legend title text
+    legend.margin = margin(8, 6, 6, 6)                                      # add cushion between subtitle, legend, and map
+    )
 
-
+# TODO: Install development version of {gridtext} to fix issue with bold text using remotes::install_github("wilkelab/gridtext").
 
 #***********************************************************************************************
 # SLOPEGRAPH ----
@@ -363,6 +377,7 @@ slopegraph <- ggplot(data = df_slopegraph,
   )
 
 
+
 #***********************************************************************************************
 # HEATMAP ----
 
@@ -379,6 +394,8 @@ slopegraph <- ggplot(data = df_slopegraph,
 # https://stackoverflow.com/questions/10686054/outlined-text-with-ggplot2
 # https://github.com/GuangchuangYu/shadowtext
 # https://stackoverflow.com/questions/72557614/define-color-and-radius-of-the-background-in-shadowtextelement-shadowtext
+# https://www.kaggle.com/code/kathakaliseth/mcdonald-s-menu-comparative-nutrition-values
+
 
 ## Load packages and data ----
 
@@ -476,6 +493,4 @@ theme(text = element_text(family = "Open Sans",
       plot.subtitle = element_markdown( margin = margin(0, 0, 6, 0) ),
       legend.position = "none") +
 coord_fixed()                                          # keep tiles square
-
-
 
