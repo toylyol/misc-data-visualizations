@@ -22,6 +22,8 @@
 # See how to change caption position: https://community.rstudio.com/t/changing-position-of-plot-captions/108973/2
 # See legend position options: https://r-graph-gallery.com/239-custom-layout-legend-ggplot2.html
 # See guide_legend() options: https://ggplot2.tidyverse.org/reference/guide_legend.html
+# View remotes package documentation: https://github.com/r-lib/remotes
+
 
 ## Load packages ----
 
@@ -123,23 +125,23 @@ hex_map <- hex_map %>%
                                title.hjust = .5, title.theme = element_text(size = 9),      # use code to alter viridis color bar from Cédric Scherer
                                barwidth = unit(20, 'lines'), barheight = unit(.5, 'lines'), 
                                order = 1)) +                                                # ensure viridis scale is first
-  labs(title = "In 2018, Okalahoma had the high prevalence of elderly, female Medicare enrollees with 6+ chronic conditions.",
-       subtitle = "The prevalence of six or more chronic conditions in Medicare beneficiaries assigned female at birth aged 65 years or older was 20.5% in OK in 2018.",
+  labs(title = "<b>In 2018, Okalahoma had the high prevalence of elderly, female Medicare enrollees with 6+ chronic conditions.",
+       subtitle = "The prevalence of six or more chronic conditions in Medicare beneficiaries assigned female at birth aged 65 years or older was 20.5% in OK in 2018.</b>",
        caption = "Source: Centers for Medicare & Medicaid Services") +
   theme_void() +
   theme(
     text = element_text(family = "Open Sans"),                              # set the font family for all {ggtext} elements
     plot.title.position = "plot",                                           # help ensure title aligned with plot
     plot.caption.position = "plot",                                         # move caption to be right-aligned with plot
-    plot.title = element_textbox_simple( face = "bold",                     # use {ggtext} to format title; HTML tags will format text; textbox will wrap automatically
+    plot.title = element_textbox_simple( #face = "bold",                     # use {ggtext} to format title; HTML tags will format text; textbox will wrap automatically
                                          margin = margin(0, 0, 3, 0) ),     
     plot.subtitle = element_textbox_simple( margin = margin(0, 0, 6, 0) ),  # note order of margins: top, right, bottom, left
     legend.position = "top",                                                # move legend above map
     legend.text = element_text(size = 8),                                   # size legend title text
-    legend.margin = margin(8, 6, 6, 6)                                      # add cushion between subtitle, legend, and map
-    )
+    legend.margin = margin(10, 6, 6, 4)                                     # add cushion between subtitle, legend, and map
+    ) 
 
-# TODO: Install development version of {gridtext} to fix issue with bold text using remotes::install_github("wilkelab/gridtext").
+
 
 #***********************************************************************************************
 # SLOPEGRAPH ----
@@ -354,7 +356,7 @@ slopegraph <- ggplot(data = df_slopegraph,
                    size = 3.5, 
                    nudge_x = .3, 
                    direction = "y") +
-  scale_color_manual(values = c("Yes" = "#2D708EFF",            # specify custom scale colors using largest col
+  scale_color_manual(values = c("Yes" = "#2D708EFF",            # specify custom scale colors using 'largest' col
                                 "No" = "#c9c9c9")) +
   scale_linetype_manual(values = c("solid" = "solid",           # specify line types
                                    "dotted" = "dotdash")) +
@@ -494,3 +496,166 @@ theme(text = element_text(family = "Open Sans",
       legend.position = "none") +
 coord_fixed()                                          # keep tiles square
 
+
+
+#***********************************************************************************************
+# BROADBAND MAP ----
+
+
+## References ----
+
+# Request Census API Key: https://api.census.gov/data/key_signup.html
+# Load Census API Key in Renviron: https://walker-data.com/tidycensus/reference/census_api_key.html
+# Learn more in Broadband TidyTuesday repo: https://github.com/rfordatascience/tidytuesday/blob/master/data/2021/2021-05-11/readme.md
+# See all {tigris} functions: https://github.com/walkerke/tigris
+# Apply lesson learned from Charlie in Mapping with R (R for the Rest of Us)
+# View data from Census Bureau's new ACCESS Broadband Dashboard: https://www.census.gov/programs-surveys/community-resilience-estimates/partnerships/ntia/broadband-act.html
+# Learn CRS of a given layer: https://r-spatial.github.io/sf/reference/st_crs.html
+# Use fonts from flatly theme (e.g., Lato): https://gist.github.com/reywood/11069512
+# See Lato, a Google font: https://fonts.google.com/specimen/Lato
+
+
+## Load packages ----
+
+library(tidyverse)
+library(ggrepel)
+library(tigris)
+library(here)
+library(sf)
+
+path <- here()
+
+
+## Get data ----
+
+### retrieve TidyTuesday dataset
+
+broadband <- openxlsx::read.xlsx( paste0(path,"/data/county_data_ACCESS_BROADBAND_Dashboard.xlsx") )
+
+### retrieve sf object using {tigris}
+
+ut_counties <- counties(state = "UT", year = 2021) %>%
+  rmapshaper::ms_simplify()
+
+### change case
+
+names(ut_counties) <- tolower(names(ut_counties))
+
+
+## Do quick EDA using skimr ----
+# 
+# skimr::skim(broadband)
+# 
+# skimr::skim(ut_counties)
+
+
+## Merge and clean up data ----
+
+ut_counties_sf <- ut_counties %>%
+  left_join(broadband, by = c("geoid" = "GEO_ID")) %>%
+  select(-c("lsad", "classfp", "mtfcc", "csafp", "cbsafp", "metdivfp", "funcstat")) 
+
+
+## Create new sf object for counties comprising "Silicon Slopes" ----
+
+## Utah County geoid: "49049"
+## Salt Lake County geoid: "49035"
+## Summit County geoid: "49043"
+
+### subset counties 
+
+utah_co_sf <- ut_counties_sf[ut_counties_sf$geoid == "49049", ]
+salt_lake_co_sf <- ut_counties_sf[ut_counties_sf$geoid == "49035", ]
+summit_co_sf <- ut_counties_sf[ut_counties_sf$geoid == "49043", ]
+
+### union counties; use bind_rows() to retain county boundaries
+
+silicon_slopes_sf <- utah_co_sf %>%
+  st_union(salt_lake_co_sf) %>%
+  st_union(summit_co_sf) %>%
+  select(name.x, geometry)
+
+### change name 
+
+silicon_slopes_sf$name.x <- "Silicon Slopes"
+
+
+## Test using mapview ----
+
+# ut_counties_sf %>%
+#   mapview(zcol = "fcc_broadband_avail)")
+# 
+# ut_counties_sf %>%
+#   mapview(zcol = "broadband_usage")
+# 
+# mapview(silicon_slopes_sf)
+
+
+## Create layer with point locations for Provo, Salt Lake, and Park City ----
+
+# Source: https://www.latlong.net/
+
+city_coordinates <- tribble(
+  ~city, ~long, ~lat,
+  "Salt Lake City", -111.876183, 40.758701,
+  "Provo", 	-111.658531, 40.233845,
+  "Park City", -111.497971, 40.646061
+)
+
+city_coordinates <- city_coordinates |> st_as_sf(coords = c("long", "lat"),
+                                                 crs = 4269)                 # use st_crs() to check the CRS of a layer 
+
+## Make map ----
+
+ggplot() +
+  geom_sf(data = ut_counties_sf,
+          aes(fill = pct_telework_ACS17_21),
+          color = "white",                    # change county borders
+          size = 0.5) +                       # change stroke width
+  scale_fill_viridis_c(direction = -1) +
+  geom_sf(data = silicon_slopes_sf,
+          color = "white",
+          size = 1,
+          alpha = 0) +              # make layer transparent
+  # geom_sf(data = city_coordinates,
+  #         color = "white",
+  #         size = 3) +
+  # geom_sf_text(data = silicon_slopes_sf,
+  #              aes(label = name.x),
+  #              color = "white",
+  #              size = 4,
+  #              nudge_x = 1) +
+  guides(fill = guide_colorbar(title.position = 'top',   
+                               title.hjust = .5, title.theme = element_text(size = 9),
+                               barwidth = unit(20, 'lines'), barheight = unit(.5, 'lines'))) +  
+  labs(caption = "Source: 5-Year American Community Survey, U.S. Census Bureau, 2017-21") +
+  theme_minimal() +
+  theme(
+    text = element_text(family = "Lato"),                                   # set the font family for all {ggtext} elements
+    plot.title.position = "plot",                                           # help ensure title aligned with plot
+    plot.caption.position = "plot",                                         # move caption to be right-aligned with plot
+    plot.title = element_textbox_simple(margin = margin(0, 0, 3, 0) ),     
+    plot.subtitle = element_textbox_simple( margin = margin(0, 0, 6, 0) ),  # note order of margins: top, right, bottom, left
+    legend.position = "top",                                                # move legend above map
+    legend.text = element_text(size = 8),                                   # size legend title text
+    legend.margin = margin(10, 6, 6, 4)                                     # add cushion between subtitle, legend, and map
+  ) 
+
+
+# There is a glitch with {ggrepel} that causes the map not to render...
+# geom_text_repel(data = city_coordinates,
+#                 aes(x = long,
+#                     y = lat,
+#                     label = city)) +
+# coord_sf(default_crs = 4269) 
+# https://twitter.com/ClausWilke/status/1275938706646618113/photo/2
+# https://github.com/tidyverse/ggplot2/issues/3945
+# https://stackoverflow.com/questions/74482800/how-to-plot-coordinates-over-a-shape-file-in-r
+# The labels appear at the bottom with lims_method = "geometry_bbox" in coord_sf().
+# The map does not render at all with default_crs = NULL or crs = 4269 or default_crs = 4269.
+# It looks like the GitHub package {ggsflabel} would fix these issues (e.g., see lims_bbox()), but I did not try it: https://yutannihilation.github.io/ggsflabel/index.html.
+
+
+# https://yutani.rbind.io/post/geom-sf-text-and-geom-sf-label-are-coming/
+# https://community.rstudio.com/t/geom-sf-text-change-position-of-only-one-text-label/73419/6
+# https://github.com/slowkow/ggrepel/issues/111
