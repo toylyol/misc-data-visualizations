@@ -591,58 +591,68 @@ silicon_slopes_sf$name.x <- "Silicon Slopes"
 # mapview(silicon_slopes_sf)
 
 
-## Create layer with point locations for Provo, Salt Lake, and Park City ----
+# ## Create layer with point locations for Provo, Salt Lake, and Park City ----
+# 
+# # Source: https://www.latlong.net/
+# 
+# city_coordinates <- tribble(
+#   ~city, ~long, ~lat,
+#   "Salt Lake City", -111.876183, 40.758701,
+#   "Provo", 	-111.658531, 40.233845,
+#   "Park City", -111.497971, 40.646061
+# )
+# 
+# city_coordinates <- city_coordinates |> st_as_sf(coords = c("long", "lat"),
+#                                                  crs = 4269)                 # use st_crs() to check the CRS of a layer 
 
-# Source: https://www.latlong.net/
 
-city_coordinates <- tribble(
-  ~city, ~long, ~lat,
-  "Salt Lake City", -111.876183, 40.758701,
-  "Provo", 	-111.658531, 40.233845,
-  "Park City", -111.497971, 40.646061
-)
+## Add Google fonts ----
 
-city_coordinates <- city_coordinates |> st_as_sf(coords = c("long", "lat"),
-                                                 crs = 4269)                 # use st_crs() to check the CRS of a layer 
+sysfonts::font_add_google(name = "Lato",
+                          family = "Lato")
+
+showtext::showtext_auto()  # load the font; must be done every session
+
 
 ## Make map ----
 
 ggplot() +
   geom_sf(data = ut_counties_sf,
           aes(fill = pct_telework_ACS17_21),
-          color = "white",                    # change county borders
-          size = 0.5) +                       # change stroke width
-  scale_fill_viridis_c(direction = -1) +
+          color = "white",                                      # change county borders
+          size = 0.5) +                                         # change stroke width
+  scale_fill_viridis_c(name = "Percent of Teleworking Workers",
+                       direction = -1,
+                       label = scales::label_number(suffix = "%")) +
   geom_sf(data = silicon_slopes_sf,
           color = "white",
-          size = 1,
-          alpha = 0) +              # make layer transparent
-  # geom_sf(data = city_coordinates,
+          size = 1.85,
+          alpha = 0) +                        # make layer transparent
+  # geom_sf(data = city_coordinates,          # add point locations layer
   #         color = "white",
   #         size = 3) +
-  # geom_sf_text(data = silicon_slopes_sf,
-  #              aes(label = name.x),
-  #              color = "white",
-  #              size = 4,
-  #              nudge_x = 1) +
+  geom_sf_text(data = silicon_slopes_sf,
+               aes(label = name.x),
+               color = "white",
+               size = 6,
+               face = "bold",
+               nudge_x = 1.55,
+               nudge_y = -0.2) +
   guides(fill = guide_colorbar(title.position = 'top',   
                                title.hjust = .5, title.theme = element_text(size = 9),
                                barwidth = unit(20, 'lines'), barheight = unit(.5, 'lines'))) +  
   labs(caption = "Source: 5-Year American Community Survey, U.S. Census Bureau, 2017-21") +
-  theme_minimal() +
+  theme_void() +
   theme(
-    text = element_text(family = "Lato"),                                   # set the font family for all {ggtext} elements
-    plot.title.position = "plot",                                           # help ensure title aligned with plot
-    plot.caption.position = "plot",                                         # move caption to be right-aligned with plot
-    plot.title = element_textbox_simple(margin = margin(0, 0, 3, 0) ),     
-    plot.subtitle = element_textbox_simple( margin = margin(0, 0, 6, 0) ),  # note order of margins: top, right, bottom, left
-    legend.position = "top",                                                # move legend above map
-    legend.text = element_text(size = 8),                                   # size legend title text
-    legend.margin = margin(10, 6, 6, 4)                                     # add cushion between subtitle, legend, and map
+    text = element_text(family = "Lato"), 
+    plot.caption.position = "plot",                            # move caption to be right-aligned with plot
+    legend.position = "top",                                   # move legend above map
+    legend.text = element_text(size = 8),                      # size legend title text
+    legend.margin = margin(10, 6, 6, 4)                        # add cushion between subtitle, legend, and map
   ) 
 
 
-# There is a glitch with {ggrepel} that causes the map not to render...
+# There is a glitch with {ggrepel} that causes the map not to render when the point layer is labelled...
 # geom_text_repel(data = city_coordinates,
 #                 aes(x = long,
 #                     y = lat,
@@ -654,8 +664,7 @@ ggplot() +
 # The labels appear at the bottom with lims_method = "geometry_bbox" in coord_sf().
 # The map does not render at all with default_crs = NULL or crs = 4269 or default_crs = 4269.
 # It looks like the GitHub package {ggsflabel} would fix these issues (e.g., see lims_bbox()), but I did not try it: https://yutannihilation.github.io/ggsflabel/index.html.
-
-
-# https://yutani.rbind.io/post/geom-sf-text-and-geom-sf-label-are-coming/
-# https://community.rstudio.com/t/geom-sf-text-change-position-of-only-one-text-label/73419/6
-# https://github.com/slowkow/ggrepel/issues/111
+# Here is another source to consider: https://yutani.rbind.io/post/geom-sf-text-and-geom-sf-label-are-coming/
+# Here is another source to consider: https://community.rstudio.com/t/geom-sf-text-change-position-of-only-one-text-label/73419/6
+# Here is another source to consider: https://github.com/slowkow/ggrepel/issues/111
+# Consider st_point_on_surface().
