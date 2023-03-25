@@ -1,0 +1,557 @@
+---
+title: "Static Data Visualization Gallery"
+date: "March 2023"
+output: 
+  html_document:
+    theme: flatly
+editor_options: 
+  chunk_output_type: console
+---
+
+> This is a sample collection of non-interactive data visualizations. See the code used to develop these visualizations on [GitHub](https://github.com/toylyol/misc-data-viz/tree/main/Data%20Viz%20Gallery).
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(eval=TRUE, include=FALSE, echo=FALSE, comment=NA, cache=FALSE)
+
+```
+
+```{r list-development-packages, warnings = FALSE, messages = FALSE, eval = FALSE}
+
+# The following functions are courtesy of Stats and R: https://statsandr.com/blog/an-efficient-way-to-install-and-load-r-packages/
+
+# List names of required packages
+
+packages <- c("tidyverse", "openxlsx", "ggtext", "sf", "ggrepel", "tigris", "rmapshaper", "here")
+
+
+# Install required packages if not yet installed
+installed_packages <- packages %in% rownames(installed.packages())
+
+if (any(installed_packages == FALSE)) {
+  install.packages(packages[!installed_packages])
+}
+
+
+# Load required packages
+lapply(packages, library, character.only = TRUE) |> invisible()
+
+```
+
+```{r load-packages, warnings = FALSE, messages = FALSE}
+
+# Load only package actually needed to run this document
+
+library(here)
+
+path <- here()
+
+```
+
+```{r set-up-Google-font, eval = FALSE}
+
+# Add Google fonts
+
+sysfonts::font_add_google(name = "Lato",
+                          family = "Lato")
+
+showtext::showtext_auto()  # load the font; must be done every session
+
+```
+
+
+# {.tabset}
+
+## `r fontawesome::fa("chart-line", fill = "#2c3e50", fill_opacity =0.75, height = "1.5em")`
+
+```{r get-slopegraph-data, eval = FALSE}
+
+### Read in cleaned data ----
+
+data <- read.xlsx( paste0(path, "/data/clean_aca_data.xlsx") )
+
+
+## Restructure data for slopegraph ----
+
+### Identify states with the top 10 largest uninsured_rate_change ----
+
+top_states <- data %>% 
+  select(state, uninsured_rate_change) %>%
+  filter(state != "United States") %>%            # remove aggregate value for entire country so not in top 10
+  slice_min(uninsured_rate_change, n = 10) %>%    # replace the superseded top_n() function
+  pull(state)                                     # isolate data in one column to save as a character vector to filter later
+
+top_states[[11]] <- "United States" # add aggregate US to the top_states list to use for filtering
+
+
+### Add columns to use in formatting ggplot ----
+
+data <- data %>%
+  mutate( pct_change = as.character(round(uninsured_rate_change*100, 0)) ) %>%
+  mutate( line_style = ifelse(state == "United States", "dotted", "solid") ) %>%   # add col so USA will have special line type
+  mutate( abbrev = case_when(state == "Nevada" ~ "NV",
+                             state == "Oregon" ~ "OR",
+                             state == "California" ~ "CA",
+                             state == "Kentucky" ~ "KY",
+                             state == "New Mexico" ~ "NM",
+                             state == "West Virginia" ~ "WV",
+                             state == "Arkansas" ~ "AR",
+                             state == "Florida" ~ "FL",
+                             state == "Colorado" ~ "CO",
+                             state == "Washington" ~ "WA",
+                             state == "United States" ~ "USA") ) %>%
+  mutate( largest = case_when(abbrev == "CA" ~ "Yes",                              # add col to use for custom color scale
+                              abbrev == "OR" ~ "Yes",
+                              abbrev == "NV" ~ "Yes",
+                              TRUE ~ "No") )
+  
+
+### Subset dataframe ----
+
+df_slopegraph <- data %>% 
+  filter(state %in% top_states) %>%
+  select(state, uninsured_rate_2010, uninsured_rate_2015, pct_change, line_style, abbrev, largest) %>%
+  pivot_longer(!c(state, line_style, abbrev, pct_change, largest),  # delineate cols to keep
+               names_to = "date", 
+               values_to = "rate") 
+
+df_slopegraph$date <- df_slopegraph$date %>%
+  str_replace_all("uninsured_rate_2010", "2010") %>%  # change name
+  str_replace_all("uninsured_rate_2015", "2015")
+
+```
+
+```{r generate-slopegraph, eval = FALSE}
+
+# Create slopegraph 
+
+slopegraph <- ggplot(data = df_slopegraph, 
+                     aes(x = date, 
+                         y = rate, 
+                         group = state, 
+                         color = largest,                                  # specify col to use to color points and lines
+                         linetype = line_style,                            # specify col to change line style for USA
+                         label = paste0(abbrev, "  ", rate*100, "%")))  +
+  geom_line(alpha = 1, size = 1.25) +
+  geom_point(alpha = 1, size = 4) +
+  geom_text_repel( data = df_slopegraph %>% filter(date == "2010"),        # label pts directly; format label for 2010
+                   family = "Lato",
+                   hjust = "left", 
+                   fontface = "bold", 
+                   size = 3.5, 
+                   nudge_x = -.3, 
+                   direction = "y") +
+  geom_text_repel( data = df_slopegraph %>% filter(date == "2015"),
+                   family = "Lato",
+                   hjust = "right",
+                   fontface = "bold", 
+                   size = 3.5, 
+                   nudge_x = .3, 
+                   direction = "y") +
+  scale_color_manual(values = c("Yes" = "#2D708EFF",          # specify custom scale colors using 'largest' col
+                                "No" = "#c9c9c9")) +
+  scale_linetype_manual(values = c("solid" = "solid",         # specify line types
+                                   "dotted" = "dotdash")) +
+  scale_x_discrete(expand = c(0, 0)) +                        # remove space between plot and axis
+  xlab("\nYear") +                                            # change axes titles, using newline to add space between axes
+  ylab("Percentage of Uninsured Persons\n") +
+  labs(caption = "Source: Kaggle") +
+  theme_minimal() +
+  theme(
+    text = element_text(family = "Lato",
+                        color = "#2C3E50"),   # set the font family for all {ggtext} elements
+    plot.title.position = "plot",           # help ensure title aligned with plot
+    axis.text.y = element_blank(),          # remove y axis labels
+    panel.grid.major.y = element_blank(),   # remove horizontal gridlines 
+    panel.grid.minor.y = element_blank(),
+    legend.position = "none"                # remove legend
+  )
+
+ggsave( here("images", "slopegraph.png"), height = 576, units = "px" )
+
+```
+
+**California, Oregon, and Nevada saw the <span style ='color: #0F4B63'>largest decrease</span> in uninsured persons after the Affordable Care Act.**
+
+On average, the uninsured rate in the United States decreased six percent from 2010 to 2015. The top 10 states with the largest decrease in uninsured persons had a decrease of more than eight percent. 
+
+![]( `r here("images/slopegraph.png")` )
+
+## `r fontawesome::fa("info-circle", fill = "#2c3e50", fill_opacity =0.75, height = "1.5em")`
+
+- Add info here.
+
+# {-}
+
+<br>
+
+
+# {.tabset}
+
+## `r fontawesome::fa("map-location-dot", fill = "#2c3e50", fill_opacity =0.75, height = "1.5em")`
+
+```{r get-broadband-data, eval = FALSE}
+
+## Get data ----
+
+### retrieve data from Census Bureau's ACCESS Dashboard
+
+broadband <- openxlsx::read.xlsx( paste0(path,"/data/county_data_ACCESS_BROADBAND_Dashboard.xlsx") )
+
+### retrieve sf object using {tigris}
+
+ut_counties <- tigris::counties(state = "UT", year = 2021) %>%
+  rmapshaper::ms_simplify()
+
+### change case
+
+names(ut_counties) <- tolower(names(ut_counties))
+
+## Merge and clean up data ----
+
+ut_counties_sf <- ut_counties %>%
+  left_join(broadband, by = c("geoid" = "GEO_ID")) %>%
+  select(-c("lsad", "classfp", "mtfcc", "csafp", "cbsafp", "metdivfp", "funcstat")) 
+
+
+## Create new sf object for counties comprising "Silicon Slopes" ----
+
+## Utah County geoid: "49049"
+## Salt Lake County geoid: "49035"
+## Summit County geoid: "49043"
+
+### subset counties 
+
+utah_co_sf <- ut_counties_sf[ut_counties_sf$geoid == "49049", ]
+salt_lake_co_sf <- ut_counties_sf[ut_counties_sf$geoid == "49035", ]
+summit_co_sf <- ut_counties_sf[ut_counties_sf$geoid == "49043", ]
+
+### union counties; use bind_rows() to retain county boundaries
+
+silicon_slopes_sf <- utah_co_sf %>%
+  st_union(salt_lake_co_sf) %>%
+  st_union(summit_co_sf) %>%
+  select(name.x, geometry)
+
+### change name 
+
+silicon_slopes_sf$name.x <- "Silicon Slopes"
+
+View(
+ut_counties_sf %>%
+  select(name.x, pct_telework_ACS17_21) %>%
+  arrange(desc(pct_telework_ACS17_21))
+)
+
+```
+
+
+```{r make-broadband-map, eval = FALSE}
+
+broadband_map <- ggplot() +
+  geom_sf(data = ut_counties_sf,
+          aes(fill = pct_telework_ACS17_21),
+          color = "white",                                      # change county borders
+          size = 0.5) +                                         # change stroke width
+  scale_fill_viridis_c(name = "Percent of Teleworking Workers",
+                       direction = -1,
+                       label = scales::label_number(suffix = "%")) +
+  geom_sf(data = silicon_slopes_sf,
+          color = "white",
+          size = 1.85,
+          alpha = 0) +                        # make layer transparent
+  geom_sf_text(data = silicon_slopes_sf,
+               aes(label = name.x),
+               color = "white",
+               size = 5,
+               face = "bold",
+               nudge_x = 1.7,
+               nudge_y = -0.2) +
+  guides(fill = guide_colorbar(title.position = 'top',   
+                               title.hjust = .5, 
+                               title.theme = element_text(size = 9),
+                               barwidth = unit(12, 'lines'), 
+                               barheight = unit(.5, 'lines'))) +  
+  labs(caption = "Source: U.S. Census Bureau") +
+  theme_void() +
+  theme(
+    text = element_text(family = "Lato"), 
+    plot.caption.position = "plot",                            # move caption to be right-aligned with plot
+    legend.position = "top",                                   # move legend above map
+    legend.text = element_text(size = 8),                      # size legend title text
+    legend.margin = margin(10, 6, 6, 4),                       # add cushion
+     plot.margin = margin(10, 0, 0, 0)
+  ) 
+
+```
+
+**In 2021, the counties of "Silicon Slopes" had some the highest percentages of teleworkers in Utah.**
+
+Unsurprisingly, the three counties (Salt Lake, Summit, and Utah) comprising UT's technology hub were among the top five counties with the highest percentage of teleworkers.
+
+![]( `r here("images/broadband_map.png")` )
+
+## `r fontawesome::fa("info-circle", fill = "#2c3e50", fill_opacity =0.75, height = "1.5em")`
+
+- The telework data were obtained from the U.S. Census Bureau's [ACCESS BROADBAND Dashboard](https://www.census.gov/programs-surveys/community-resilience-estimates/partnerships/ntia/broadband-act.html). This dashboard is a result of work done by the Census Bureau and the National Telecommunications and Information Administration (NTIA) following the passage of the ACCESS BROADBAND Act of 2021. The original source of the telework data was the 2017-21 five-year American Community Survey.
+
+- Add info here.
+
+# {-}
+
+<br>
+
+
+# {.tabset}
+
+## `r fontawesome::fa("table-cells", fill = "#2c3e50", fill_opacity =0.75, height = "1.5em")`
+
+```{r retrieve-heatmap-data, eval = FALSE}
+
+## Load packages and data ----
+
+mcd_data <- read_csv( paste0(path, "/data/mcd_menu.csv") ) # use readr instead of base to avoid substitution of spaces for dots
+
+
+## Keep only columns with % DV ----
+
+keep_cols <- mcd_data %>%
+  select( matches("% Daily Value") ) %>%
+  names()
+
+keep_cols <- c("Category", "Item", keep_cols) # add two cols to char vector
+
+mcd_data <- mcd_data %>%
+  select( all_of(keep_cols) ) # use select helper function to avoid ambiguous-external-vector warning
+
+
+## Convert to decimals ---
+
+convertPct <- function(column){column/100}
+
+mcd_data <- mcd_data %>%
+  mutate(across(`Total Fat (% Daily Value)`:`Iron (% Daily Value)`,
+                convertPct))
+
+
+## Subset data ---- 
+
+breaky_foods <- c("Egg McMuffin", "Egg White Delight", "Sausage McMuffin", "Steak & Egg McMuffin",
+                  "Bacon, Egg & Cheese Biscuit (Regular Biscuit)", "Sausage Biscuit (Regular Biscuit)",
+                  "Southern Style Chicken Biscuit (Regular Biscuit)", "Steak & Egg Biscuit (Regular Biscuit)",
+                  "Bacon, Egg & Cheese McGriddles", "Sausage McGriddles", "Bacon, Egg & Cheese Bagel",
+                  "Steak, Egg & Cheese Bagel", "Big Breakfast (Regular Biscuit)", 
+                  "Big Breakfast with Hotcakes (Regular Biscuit)", "Hotcakes",
+                  "Cinnamon Melts", "Sausage Burrito","Fruit & Maple Oatmeal")
+
+breaky <- mcd_data %>%
+  filter(Item %in% breaky_foods)
+
+
+## Shape data into long format ----
+
+breaky <- breaky %>%
+  pivot_longer(cols = !c(Category, Item),
+               names_to = "nutrition",
+               values_to = "pct_dv")
+
+breaky$Item <- str_replace_all(breaky$Item, "Regular Biscuit", "Regular")
+
+breaky$nutrition <- str_replace_all(breaky$nutrition, " \\(% Daily Value\\)", "") 
+
+breaky <- breaky %>% 
+  mutate(face_format = case_when(Item == "Big Breakfast (Regular)" ~ "bold",
+                                 Item == "Big Breakfast with Hotcakes (Regular)" ~ "bold",
+                                 TRUE ~ "plain")
+  )
+
+```
+
+```{r create-heatmap, eval = FALSE}
+
+## Generate heatmap ----
+
+heatmap <- ggplot(data = breaky, 
+                  aes(x = nutrition,
+                      y = Item,
+                      fill = pct_dv,
+                      height = 1,                 # delineate size of tiles
+                      width = 1)) +
+geom_tile(color = "white",                        # add white border
+          size = 0.01) +
+geom_text(aes(label = paste0(pct_dv*100, "%")),   # format pct_dv as percent
+                color = "white",
+                size = 3) +
+scale_fill_viridis_c(name = "Nutrition\n(% Daily Value)",
+                     direction = -1,
+                     labels = scales::percent_format()) +
+scale_y_discrete(expand = c(0,0)) +               # remove space between plot and axis
+scale_x_discrete(expand = c(0, 0)) +
+labs(x = "", 
+     y = "",                                      # remove titles from x and y axes
+     caption = "Source: Kaggle") +
+theme_minimal() +
+theme(
+      text = element_text(family = "Lato",
+                          color = "#2C3E50",
+                          size = 12),
+      axis.text.x = element_text(angle = -45,     # angle the x-axis text
+                                 vjust = -0.01,
+                                 hjust = -0.01),
+      plot.caption.position = "plot",
+      legend.text = element_text(size = 9),       # size legend title text
+      plot.margin = margin(10, 0, 0, 0)) + 
+coord_fixed()                                     # keep tiles square
+
+
+ggsave( here("images", "heatmap.png"), width = 889, height = 764, units = "px" )
+
+```
+
+**McDonald's 'Big Breakfast' is a high-cholesterol start to the day.**
+
+Of the breakfast items listed, the Big Breakfast (with or without hotcakes) has the worst nutritional value.
+
+![]( `r here("images/heatmap.png")` )
+
+## `r fontawesome::fa("info-circle", fill = "#2c3e50", fill_opacity =0.75, height = "1.5em")`
+
+- Add info here.
+
+# {-}
+
+<br>
+
+
+# {.tabset}
+
+## `r fontawesome::fa("map", fill = "#2c3e50", fill_opacity =0.75, height = "1.5em")`
+
+```{r get-map-data, eval = FALSE}
+
+## Retrieve subset of Multiple Chronic Conditions (MCC) dataset using CMS API ----
+# 
+# library(jsonlite)
+# 
+# url <- "https://data.cms.gov/data-api/v1/dataset/15b08729-6ea2-4789-bf1a-b96b1da8338f/data?filter[Bene_Demo_Lvl][value]=Sex&filter[Bene_Geo_Lvl][value]=State"
+# 
+# mcc_data <-  jsonlite::fromJSON(url)
+
+# write.xlsx( mcc_data, paste0(path, "/data/mcc_data.xlsx") ) # save a copy of the MCC data
+
+
+## Load MCC data ----
+
+mcc_data <- read.xlsx( paste0(path, "/data/mcc_data.xlsx") )
+
+### Ensure correct data type ----
+
+mcc_data <- mcc_data %>% 
+  mutate( across(c(Prvlnc, Tot_Mdcr_Stdzd_Pymt_PC, Tot_Mdcr_Pymt_PC, Hosp_Readmsn_Rate, ER_Visits_Per_1000_Benes), 
+                 as.numeric) )
+
+
+## Subset MCC data ----
+
+data <- mcc_data %>%
+  filter( Bene_Age_Lvl == "<65",
+          Bene_Demo_Desc == "Female",
+          Bene_MCC == "6+" )
+
+
+## Load hexagonal U.S. shapefile ----
+
+shapefile <- paste0(path,"/data/us_states_hexgrid.shp") # download from CARTO
+
+hex_map <- read_sf(shapefile)
+
+### Clean up shapefile columns ----
+
+hex_map <- hex_map %>%
+  mutate( google_nam = gsub(" \\(United States\\)", "", google_nam) ) %>%
+  rename( state_name = google_nam,
+          abbrev = iso3166_2 ) %>%
+  select( -c(created_at, updated_at, label, bees) ) # remove necessary columns
+
+## Join (non-spatial) with MCC data ----
+
+hex_map <- hex_map %>%
+  left_join( data, by = c("state_name" = "Bene_Geo_Desc") )
+
+
+## Retrieve centroid for labelling ----
+
+hex_map <-  cbind(hex_map, st_coordinates(st_centroid(hex_map)))
+
+```
+
+```{r make-hexmap, eval = FALSE}
+
+hex_map <- hex_map %>%
+  ggplot() +
+  geom_sf(aes(fill = Prvlnc,                                            # indicate col to make chloropleth
+              shape = "No data available"),                             # create an override value for NA values
+          color = "white") +                                            # change hexbin border colors
+  scale_fill_viridis_c(name = "Prevalence of 6+ Chronic Conditions",    # give the legend a name
+                       direction = -1,                                  # reverse the scale, so darker equals larger number
+                       labels = scales::percent_format(),               # format the numbers in the legend
+                       na.value = "gray68") +                           # specify color NA values
+  geom_text(aes(x = X,                                                  # specify long of centroid
+                y = Y,                                                  # specify lat of centroid
+                label = abbrev),                                        # indicate the col to label each hexbin
+            color = "white",                                            # change font color
+            family = "Lato") +                                          # delineate the custom font
+  guides(shape = guide_legend(override.aes = list(fill = "gray68",      # add NA value to legend
+                                                  color = "white"),     # set border w/in legend
+                              order = 2,
+                              title = NULL),
+         fill = guide_colorbar(title.position = 'top',                  # move legend title to top
+                               title.hjust = .5,                        # use Cédric Scherer code to alter viridis colorbar
+                               title.theme = element_text(size = 9), 
+                               barwidth = unit(20, 'lines'), 
+                               barheight = unit(.5, 'lines'), 
+                               order = 1)) +                            # ensure viridis scale is first
+  labs(caption = "Source: Centers for Medicare & Medicaid Services") +
+  theme_void() +
+  theme(
+    text = element_text(family = "Lato",
+                        color = "#2C3E50"),
+    plot.title.position = "plot",                                           # help ensure title aligned with plot
+    plot.caption.position = "plot",                                         # move caption to be right-aligned with plot
+    legend.position = "top",                                                # move legend above map
+    legend.text = element_text(size = 8),                                   # size legend title text
+    legend.margin = margin(10, 6, 6, 4)                                     # add cushion between subtitle, legend, and map
+    ) 
+
+ggsave( here("images", "hex_map.png"), height = 576, units = "px" )
+
+```
+
+**In, 2018 Oklahoma had the highest prevalence of elderly, female Medicare enrollees with 6+ chronic conditions.**
+
+The prevalence of six or more chronic conditions among Medicare beneficiaries assigned female at birth aged 65 years or older was 20.5% in OK in 2018.
+
+![]( `r here("images/hex_map.png")` )
+
+## `r fontawesome::fa("info-circle", fill = "#2c3e50", fill_opacity =0.75, height = "1.5em")`
+
+- This visualization is a hexbin map of the United States; it features data from the Centers for Medicare and Medicaid Services' (CMS) Multiple Chronic Conditions (MCC) [dataset](https://data.cms.gov/medicare-chronic-conditions/multiple-chronic-conditions). 
+
+- The MCC data were retrieved through the CMS [API](https://data.cms.gov/api-docs). More information about the dataset can be viewed in the [data dictionary](https://data.cms.gov/resources/multiple-chronic-conditions-data-dictionary) and [methodology documentation](https://data.cms.gov/resources/medicare-chronic-conditions-methodology).
+
+- Yan Holtz's excellent [hexbin map tutorial](https://r-graph-gallery.com/328-hexbin-map-of-the-usa.html) on The R Graph Gallery provided the data source for the hexagonal shapefile—as well as helpful hints for manipulating the file.
+
+- The hexagonal shapefile of the United States was obtained from [Carto](https://team.carto.com/u/andrew/tables/andrew.us_states_hexgrid/public/map). It can be downloaded in other formats, such as GeoJSON.
+
+- The alt text was generated using the formula provided by Liz Hare in her October 2022 [presentation](https://lizharedogs.github.io/RLadiesNYAltText "Click here to be directed to Liz's presentation slides.") for R-Ladies NYC.
+
+- Thanks to Bruno Kenzo for [inspiration](https://github.com/KenzoBH/Visualizations) on how to display this collection of data visualizations.
+
+- Tips and tricks for handling NA values in a continuous chloropleth were learned from R for the Rest of Us' [Mapping with R](https://rfortherestofus.com/courses/mapping/) taught by Charlie Hadley.
+
+# {-}
+
+<br>
+
+
+<p style="text-align: center;">Toyin L. Ola</p>

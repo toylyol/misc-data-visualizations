@@ -110,3 +110,12 @@ silicon_slopes_sf$name <- "Silicon Slopes"
 
 
 # Overlay a layer with point locations for Provo, Salt Lake, and Park City.
+
+# Source: https://www.latlong.net/
+
+city_coordinates <- tribble(
+  ~city, ~long, ~lat,
+  "Salt Lake City", -111.876183, 40.758701,
+  "Provo", 	-111.658531, 40.233845,
+  "Park City", -111.497971, -111.497971
+)

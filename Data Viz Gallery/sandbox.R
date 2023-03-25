@@ -23,7 +23,7 @@
 # See legend position options: https://r-graph-gallery.com/239-custom-layout-legend-ggplot2.html
 # See guide_legend() options: https://ggplot2.tidyverse.org/reference/guide_legend.html
 # View remotes package documentation: https://github.com/r-lib/remotes
-
+# See all fontawesome icons using fontawesome::fa_metadata()$icon_names: https://rstudio.github.io/fontawesome/reference/fa.html
 
 ## Load packages ----
 
@@ -95,8 +95,8 @@ hex_map <-  cbind(hex_map, st_coordinates(st_centroid(hex_map)))
 
 ## Add Google fonts ----
 
-sysfonts::font_add_google(name = "Open Sans",
-                          family = "Open Sans")
+sysfonts::font_add_google(name = "Lato",
+                          family = "Lato")
 
 showtext::showtext_auto()  # load the font; must be done every session
 
@@ -125,8 +125,8 @@ hex_map <- hex_map %>%
                                title.hjust = .5, title.theme = element_text(size = 9),      # use code to alter viridis color bar from Cédric Scherer
                                barwidth = unit(20, 'lines'), barheight = unit(.5, 'lines'), 
                                order = 1)) +                                                # ensure viridis scale is first
-  labs(title = "<b>In 2018, Okalahoma had the high prevalence of elderly, female Medicare enrollees with 6+ chronic conditions.",
-       subtitle = "The prevalence of six or more chronic conditions in Medicare beneficiaries assigned female at birth aged 65 years or older was 20.5% in OK in 2018.</b>",
+  labs(title = "<b>In 2018, Oklahoma had the highest prevalence of elderly, female Medicare enrollees with 6+ chronic conditions.</b>",
+       subtitle = "The prevalence of six or more chronic conditions in Medicare beneficiaries assigned female at birth aged 65 years or older was 20.5% in OK in 2018.",
        caption = "Source: Centers for Medicare & Medicaid Services") +
   theme_void() +
   theme(
@@ -140,6 +140,8 @@ hex_map <- hex_map %>%
     legend.text = element_text(size = 8),                                   # size legend title text
     legend.margin = margin(10, 6, 6, 4)                                     # add cushion between subtitle, legend, and map
     ) 
+
+
 
 
 
@@ -397,6 +399,9 @@ slopegraph <- ggplot(data = df_slopegraph,
 # https://github.com/GuangchuangYu/shadowtext
 # https://stackoverflow.com/questions/72557614/define-color-and-radius-of-the-background-in-shadowtextelement-shadowtext
 # https://www.kaggle.com/code/kathakaliseth/mcdonald-s-menu-comparative-nutrition-values
+# https://stackoverflow.com/questions/57651144/conditional-formatting-of-axis-text-using-ggplot2
+# https://stackoverflow.com/questions/37443499/how-to-fix-adjust-the-width-of-each-band-in-ggplot-geom-tile?noredirect=1&lq=1
+# https://stackoverflow.com/questions/23897175/adjust-ggplot2-geom-tile-height-and-width
 
 
 ## Load packages and data ----
@@ -513,6 +518,7 @@ coord_fixed()                                          # keep tiles square
 # Learn CRS of a given layer: https://r-spatial.github.io/sf/reference/st_crs.html
 # Use fonts from flatly theme (e.g., Lato): https://gist.github.com/reywood/11069512
 # See Lato, a Google font: https://fonts.google.com/specimen/Lato
+# See functions in {scales} for modifying numerical labels: https://scales.r-lib.org/reference/label_number.html
 
 
 ## Load packages ----
@@ -528,7 +534,7 @@ path <- here()
 
 ## Get data ----
 
-### retrieve TidyTuesday dataset
+### retrieve data from Census Bureau's ACCESS Dashboard
 
 broadband <- openxlsx::read.xlsx( paste0(path,"/data/county_data_ACCESS_BROADBAND_Dashboard.xlsx") )
 
