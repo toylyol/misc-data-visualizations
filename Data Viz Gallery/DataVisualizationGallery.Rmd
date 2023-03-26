@@ -8,7 +8,7 @@ editor_options:
   chunk_output_type: console
 ---
 
-> This is a sample collection of non-interactive data visualizations. See the code used to develop these visualizations on [GitHub](https://github.com/toylyol/misc-data-viz/tree/main/Data%20Viz%20Gallery).
+> This is a sample collection of non-interactive data visualizations. See the code used to develop these visualizations on [GitHub](https://github.com/toylyol/misc-data-viz/blob/main/Data%20Viz%20Gallery/DataVisualizationGallery.Rmd). R Markdown was used to create this gallery; the next iteration will, hopefully, be built using Quarto.
 
 ```{r setup, include=FALSE}
 
@@ -50,6 +50,8 @@ path <- here()
 
 ```{r set-up-Google-font, eval = FALSE}
 
+# The Google font used in the flatly theme was identified in this gist: https://gist.github.com/reywood/11069512
+
 # Add Google fonts
 
 sysfonts::font_add_google(name = "Lato",
@@ -66,14 +68,14 @@ showtext::showtext_auto()  # load the font; must be done every session
 
 ```{r get-slopegraph-data, eval = FALSE}
 
-### Read in cleaned data ----
+# Read in cleaned data ----
 
 data <- read.xlsx( paste0(path, "/data/clean_aca_data.xlsx") )
 
 
-## Restructure data for slopegraph ----
+# Restructure data for slopegraph ----
 
-### Identify states with the top 10 largest uninsured_rate_change ----
+## identify states with the top 10 largest uninsured_rate_change ----
 
 top_states <- data %>% 
   select(state, uninsured_rate_change) %>%
@@ -83,8 +85,7 @@ top_states <- data %>%
 
 top_states[[11]] <- "United States" # add aggregate US to the top_states list to use for filtering
 
-
-### Add columns to use in formatting ggplot ----
+## add columns to use in formatting ggplot ----
 
 data <- data %>%
   mutate( pct_change = as.character(round(uninsured_rate_change*100, 0)) ) %>%
@@ -104,9 +105,8 @@ data <- data %>%
                               abbrev == "OR" ~ "Yes",
                               abbrev == "NV" ~ "Yes",
                               TRUE ~ "No") )
-  
 
-### Subset dataframe ----
+## subset dataframe ----
 
 df_slopegraph <- data %>% 
   filter(state %in% top_states) %>%
@@ -210,48 +210,49 @@ On average, the uninsured rate in the United States decreased six percent from 2
 
 ```{r get-broadband-data, eval = FALSE}
 
-## Get data ----
+# Get data ----
 
-### retrieve data from Census Bureau's ACCESS Dashboard
+## retrieve data from Census Bureau's ACCESS Dashboard
 
 broadband <- openxlsx::read.xlsx( paste0(path,"/data/county_data_ACCESS_BROADBAND_Dashboard.xlsx") )
 
-### retrieve sf object using {tigris}
+## retrieve sf object using {tigris}
 
 ut_counties <- tigris::counties(state = "UT", year = 2021) %>%
   rmapshaper::ms_simplify()
 
-### change case
+## change case
 
 names(ut_counties) <- tolower(names(ut_counties))
 
-## Merge and clean up data ----
+
+# Merge and clean up data ----
 
 ut_counties_sf <- ut_counties %>%
   left_join(broadband, by = c("geoid" = "GEO_ID")) %>%
   select(-c("lsad", "classfp", "mtfcc", "csafp", "cbsafp", "metdivfp", "funcstat")) 
 
 
-## Create new sf object for counties comprising "Silicon Slopes" ----
+# Create new sf object for counties comprising "Silicon Slopes" ----
 
 ## Utah County geoid: "49049"
 ## Salt Lake County geoid: "49035"
 ## Summit County geoid: "49043"
 
-### subset counties 
+## subset counties 
 
 utah_co_sf <- ut_counties_sf[ut_counties_sf$geoid == "49049", ]
 salt_lake_co_sf <- ut_counties_sf[ut_counties_sf$geoid == "49035", ]
 summit_co_sf <- ut_counties_sf[ut_counties_sf$geoid == "49043", ]
 
-### union counties; use bind_rows() to retain county boundaries
+## union counties; use bind_rows() to retain county boundaries
 
 silicon_slopes_sf <- utah_co_sf %>%
   st_union(salt_lake_co_sf) %>%
   st_union(summit_co_sf) %>%
   select(name.x, geometry)
 
-### change name 
+## change name 
 
 silicon_slopes_sf$name.x <- "Silicon Slopes"
 
@@ -264,6 +265,8 @@ ut_counties_sf %>%
 ```
 
 ```{r make-broadband-map, eval = FALSE}
+
+# Plot UT broadband map ----
 
 broadband_map <- ggplot() +
   geom_sf(data = ut_counties_sf,
@@ -327,12 +330,12 @@ Unsurprisingly, the three counties (Salt Lake, Summit, and Utah) comprising UT's
 
 ```{r retrieve-heatmap-data, eval = FALSE}
 
-## Load packages and data ----
+# Load data ----
 
 mcd_data <- read_csv( paste0(path, "/data/mcd_menu.csv") ) # use readr instead of base to avoid substitution of spaces for dots
 
 
-## Keep only columns with % DV ----
+# Keep only columns with % DV ----
 
 keep_cols <- mcd_data %>%
   select( matches("% Daily Value") ) %>%
@@ -344,7 +347,7 @@ mcd_data <- mcd_data %>%
   select( all_of(keep_cols) ) # use select helper function to avoid ambiguous-external-vector warning
 
 
-## Convert to decimals ---
+# Convert to decimals ---
 
 convertPct <- function(column){column/100}
 
@@ -353,7 +356,7 @@ mcd_data <- mcd_data %>%
                 convertPct))
 
 
-## Subset data ---- 
+# Subset data ---- 
 
 breaky_foods <- c("Egg McMuffin", "Egg White Delight", "Sausage McMuffin", "Steak & Egg McMuffin",
                   "Bacon, Egg & Cheese Biscuit (Regular Biscuit)", "Sausage Biscuit (Regular Biscuit)",
@@ -367,7 +370,7 @@ breaky <- mcd_data %>%
   filter(Item %in% breaky_foods)
 
 
-## Shape data into long format ----
+# Shape data into long format ----
 
 breaky <- breaky %>%
   pivot_longer(cols = !c(Category, Item),
@@ -388,7 +391,7 @@ breaky <- breaky %>%
 
 ```{r create-heatmap, eval = FALSE}
 
-## Generate heatmap ----
+# Generate heatmap ----
 
 heatmap <- ggplot(data = breaky, 
                   aes(x = nutrition,
@@ -437,6 +440,8 @@ Of the breakfast items listed, the Big Breakfast (with or without hotcakes) has 
 
 - The data visualized in this heatmap are from [Kaggle](https://www.kaggle.com/code/kathakaliseth/mcdonald-s-menu-comparative-nutrition-values).
 
+- This Data Science Tutorials [heatmap tutorial](https://www.r-bloggers.com/2022/10/how-to-create-a-heatmap-in-r/) distributed via R-Bloggers were quite helpful for recalling how the data must be structured for a heatmap made with geom_tile().
+
 - The code for a beautifully formatted horizontal colorbar is courtesy of Cédric Scherer's [workshop materials](https://www.cedricscherer.com/slides/OutlierConf2021_ggplot-wizardry.pdf)  from Data Visualization Society's Outlier Conf 2021. 
 
 - Two Stack Overflow forums ([1](https://stackoverflow.com/questions/37443499/how-to-fix-adjust-the-width-of-each-band-in-ggplot-geom-tile?noredirect=1&lq=1) and [2](https://stackoverflow.com/questions/23897175/adjust-ggplot2-geom-tile-height-and-width)) were helpful in ensuring the tiles were large enough were saved as a PNG.
@@ -452,29 +457,30 @@ Of the breakfast items listed, the Big Breakfast (with or without hotcakes) has 
 
 ```{r get-map-data, eval = FALSE}
 
-## Retrieve subset of Multiple Chronic Conditions (MCC) dataset using CMS API ----
+# Retrieve subset of Multiple Chronic Conditions (MCC) dataset using CMS API ----
 # 
 # library(jsonlite)
 # 
 # url <- "https://data.cms.gov/data-api/v1/dataset/15b08729-6ea2-4789-bf1a-b96b1da8338f/data?filter[Bene_Demo_Lvl][value]=Sex&filter[Bene_Geo_Lvl][value]=State"
 # 
 # mcc_data <-  jsonlite::fromJSON(url)
-
+# 
 # write.xlsx( mcc_data, paste0(path, "/data/mcc_data.xlsx") ) # save a copy of the MCC data
 
 
-## Load MCC data ----
+# Load MCC data (if you don'tfeel like using the CMS API) ----
 
 mcc_data <- read.xlsx( paste0(path, "/data/mcc_data.xlsx") )
 
-### Ensure correct data type ----
+
+# Ensure correct data type ----
 
 mcc_data <- mcc_data %>% 
   mutate( across(c(Prvlnc, Tot_Mdcr_Stdzd_Pymt_PC, Tot_Mdcr_Pymt_PC, Hosp_Readmsn_Rate, ER_Visits_Per_1000_Benes), 
                  as.numeric) )
 
 
-## Subset MCC data ----
+# Subset MCC data ----
 
 data <- mcc_data %>%
   filter( Bene_Age_Lvl == "<65",
@@ -482,13 +488,14 @@ data <- mcc_data %>%
           Bene_MCC == "6+" )
 
 
-## Load hexagonal U.S. shapefile ----
+# Load hexagonal U.S. shapefile ----
 
 shapefile <- paste0(path,"/data/us_states_hexgrid.shp") # download from CARTO
 
 hex_map <- read_sf(shapefile)
 
-### Clean up shapefile columns ----
+
+# Clean up shapefile columns ----
 
 hex_map <- hex_map %>%
   mutate( google_nam = gsub(" \\(United States\\)", "", google_nam) ) %>%
@@ -496,19 +503,22 @@ hex_map <- hex_map %>%
           abbrev = iso3166_2 ) %>%
   select( -c(created_at, updated_at, label, bees) ) # remove necessary columns
 
-## Join (non-spatial) with MCC data ----
+
+# Join (non-spatial) with MCC data ----
 
 hex_map <- hex_map %>%
   left_join( data, by = c("state_name" = "Bene_Geo_Desc") )
 
 
-## Retrieve centroid for labelling ----
+# Retrieve centroid for labelling ----
 
 hex_map <-  cbind(hex_map, st_coordinates(st_centroid(hex_map)))
 
 ```
 
 ```{r make-hexmap, eval = FALSE}
+
+# Create hexbin map ----
 
 hex_map <- hex_map %>%
   ggplot() +
