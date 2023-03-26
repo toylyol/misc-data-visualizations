@@ -175,11 +175,29 @@ ggsave( here("images", "slopegraph.png"), height = 576, units = "px" )
 
 On average, the uninsured rate in the United States decreased six percent from 2010 to 2015. The top 10 states with the largest decrease in uninsured persons had a decrease of more than eight percent. 
 
-![]( `r here("images/slopegraph.png")` )
+![]( `r here("images/slopegraph.png")` "This is a slopegraph depicting the change in the percentage of uninsured persons in the United States from 2010 (before the Affordable Care Act) and 2015 (after the Affordable Care Act). The states with the top ten deceases in the percentage of uninsured persons in on the y-axis, and the two years are on the x-axis. The average for the United States is also included. The slopegraph shows a decrease in the percentage of uninsured persons from 2010 to 2015.")
 
 ## `r fontawesome::fa("info-circle", fill = "#2c3e50", fill_opacity =0.75, height = "1.5em")`
 
-- Add info here.
+- Thanks to Bruno Kenzo for [inspiration](https://github.com/KenzoBH/Visualizations) on how to display this collection of data visualizations.
+
+- The alt text was generated using the formula provided by Liz Hare in her October 2022 [presentation](https://lizharedogs.github.io/RLadiesNYAltText "Click here to be directed to Liz's presentation slides.") for R-Ladies NYC.
+
+- The data used in this slopegraph was downloaded from [Kaggle](https://www.kaggle.com/datasets/hhs/health-insurance).
+
+- Chuck Powell's [slopegraph tutorial](https://ibecav.github.io/slopegraph/) was invaluable. 
+
+- This [Stack Overflow forum](https://stackoverflow.com/questions/71573377/cannot-import-fonts-into-r) provided a quick way to load and use Google fonts without downloading them locally.
+
+- The [Thinking on Data](https://www.thinkingondata.com/something-about-viridis-library/) blog provided the HEX codes in the viridis palette so that a cohesive color palette could be created.
+
+- Many resources were used to remember the options that can be used for customization: 
+  - [Removing gridlines](https://r-graphics.org/recipe-appearance-hide-gridlines)
+  - [Aligning captions](https://stackoverflow.com/questions/64701500/left-align-ggplot-caption)
+  - [Changing geom_text_repel conditionally](https://stackoverflow.com/questions/49622822/control-colour-of-geom-text-repel)
+  - [Specifying custom color scale](https://community.rstudio.com/t/setting-colours-in-ggplot-conditional-on-value/8328/2)
+  - [Changing line types conditionally](http://www.sthda.com/english/wiki/ggplot2-line-types-how-to-change-line-types-of-a-graph-in-r-software)
+  - [Aligning to the plot](https://ggplot2.tidyverse.org/articles/faq-axes.html#how-can-i-remove-the-space-between-the-plot-and-the-axis)
 
 # {-}
 
@@ -245,7 +263,6 @@ ut_counties_sf %>%
 
 ```
 
-
 ```{r make-broadband-map, eval = FALSE}
 
 broadband_map <- ggplot() +
@@ -289,13 +306,15 @@ broadband_map <- ggplot() +
 
 Unsurprisingly, the three counties (Salt Lake, Summit, and Utah) comprising UT's technology hub were among the top five counties with the highest percentage of teleworkers.
 
-![]( `r here("images/broadband_map.png")` )
+![]( `r here("images/broadband_map.png")` "This is a choropleth map of the counties within the state of Utah. The counties are filled based on the percentage of teleworkers in the county based on the 2017-2021 five-year American Community Survey estimates. The yellow-green-blue-purple viridis color palette is used such that the higher the percentage, the darker the color of the county. The three counties comprising “Silicon Slopes” are emphasized with a thick, white border to highlight the fact that they have some of the highest percentage of teleworkers in the state.")
 
 ## `r fontawesome::fa("info-circle", fill = "#2c3e50", fill_opacity =0.75, height = "1.5em")`
 
 - The telework data were obtained from the U.S. Census Bureau's [ACCESS BROADBAND Dashboard](https://www.census.gov/programs-surveys/community-resilience-estimates/partnerships/ntia/broadband-act.html). This dashboard is a result of work done by the Census Bureau and the National Telecommunications and Information Administration (NTIA) following the passage of the ACCESS BROADBAND Act of 2021. The original source of the telework data was the 2017-21 five-year American Community Survey.
 
-- Add info here.
+- In the ACCESS Dashboard data dictionary, the definition for the percentage of teleworkers is as follows: "The percentage of workers ages 16 years and older that reported their residential address as the geographic location at which they carried out their occupational activities." See the complete data dictionary online or in "/data/file_layout_ACCESS_BROADBAND_Dashboard.xlsx" within the R project on GitHub.
+
+- [*Geomcomputation with R*](https://bookdown.org/robinlovelace/geocompr/geometric-operations.html) was helpful for learning which functions could be used to subset an existing shapefile, and union the resulting shapefiles, to create a new shapefile.
 
 # {-}
 
@@ -412,11 +431,15 @@ ggsave( here("images", "heatmap.png"), width = 889, height = 764, units = "px" )
 
 Of the breakfast items listed, the Big Breakfast (with or without hotcakes) has the worst nutritional value.
 
-![]( `r here("images/heatmap.png")` )
+![]( `r here("images/heatmap.png")` "This is a heatmap. On the y-axis, McDonald’s breakfast menu items are listed. On the x-axis, several nutritional categories are listed: calories, carbs, cholesterol, dietary fiber, iron, saturated fact, sodium, total fat, vitamin A, and vitamin C. The yellow-green-blue-purple viridis color palette is used. So, the higher the percentage of a particular nutritional category that a breakfast item has, the darker the color of the square. For the vitamins and minerals, most of the squares are yellow or light yellow-green. The squares are darkest for nutritional categories like cholesterol, saturated fat, and sodium.")
 
 ## `r fontawesome::fa("info-circle", fill = "#2c3e50", fill_opacity =0.75, height = "1.5em")`
 
-- Add info here.
+- The data visualized in this heatmap are from [Kaggle](https://www.kaggle.com/code/kathakaliseth/mcdonald-s-menu-comparative-nutrition-values).
+
+- The code for a beautifully formatted horizontal colorbar is courtesy of Cédric Scherer's [workshop materials](https://www.cedricscherer.com/slides/OutlierConf2021_ggplot-wizardry.pdf)  from Data Visualization Society's Outlier Conf 2021. 
+
+- Two Stack Overflow forums ([1](https://stackoverflow.com/questions/37443499/how-to-fix-adjust-the-width-of-each-band-in-ggplot-geom-tile?noredirect=1&lq=1) and [2](https://stackoverflow.com/questions/23897175/adjust-ggplot2-geom-tile-height-and-width)) were helpful in ensuring the tiles were large enough were saved as a PNG.
 
 # {-}
 
@@ -531,7 +554,7 @@ ggsave( here("images", "hex_map.png"), height = 576, units = "px" )
 
 The prevalence of six or more chronic conditions among Medicare beneficiaries assigned female at birth aged 65 years or older was 20.5% in OK in 2018.
 
-![]( `r here("images/hex_map.png")` )
+![]( `r here("images/hex_map.png")` "This is a hexbin map of the United States. Each state (and Washington D.C.) is represented as a hexagon. Each hexbin is filled based on the prevalence of Medicare beneficiaries aged 65 years or older assigned female at birth who have six or more chronic conditions. The yellow-green-blue-purple viridis color palette is used such that the higher the prevalence percentage, the darker the color of each hexagon. There are several states for which there is no data: Those hexbins are colored a medium gray. The darkest colors are for states in what would be the southeastern United States in a traditional map (e.g., Oklahoma, Florida, Louisiana, etc.), indicating a higher prevalence of elderly, female Medicare beneficiaries with multiple chronic conditions.")
 
 ## `r fontawesome::fa("info-circle", fill = "#2c3e50", fill_opacity =0.75, height = "1.5em")`
 
@@ -543,11 +566,7 @@ The prevalence of six or more chronic conditions among Medicare beneficiaries as
 
 - The hexagonal shapefile of the United States was obtained from [Carto](https://team.carto.com/u/andrew/tables/andrew.us_states_hexgrid/public/map). It can be downloaded in other formats, such as GeoJSON.
 
-- The alt text was generated using the formula provided by Liz Hare in her October 2022 [presentation](https://lizharedogs.github.io/RLadiesNYAltText "Click here to be directed to Liz's presentation slides.") for R-Ladies NYC.
-
-- Thanks to Bruno Kenzo for [inspiration](https://github.com/KenzoBH/Visualizations) on how to display this collection of data visualizations.
-
-- Tips and tricks for handling NA values in a continuous chloropleth were learned from R for the Rest of Us' [Mapping with R](https://rfortherestofus.com/courses/mapping/) taught by Charlie Hadley.
+- Tips and tricks for handling NA values in a continuous choropleth map were learned from R for the Rest of Us' [Mapping with R](https://rfortherestofus.com/courses/mapping/) taught by Charlie Hadley.
 
 # {-}
 
