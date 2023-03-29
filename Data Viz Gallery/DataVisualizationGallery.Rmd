@@ -22,7 +22,8 @@ knitr::opts_chunk$set(eval=TRUE, include=FALSE, echo=FALSE, comment=NA, cache=FA
 
 # List names of required packages
 
-packages <- c("tidyverse", "openxlsx", "ggtext", "sf", "ggrepel", "tigris", "rmapshaper", "here")
+packages <- c("tidyverse", "openxlsx", "ggtext", "sf", "ggrepel", "tigris", 
+              "rmapshaper", "jsonlite", "sysfonts", "showtext", "here")
 
 
 # Install required packages if not yet installed
@@ -256,12 +257,6 @@ silicon_slopes_sf <- utah_co_sf %>%
 
 silicon_slopes_sf$name.x <- "Silicon Slopes"
 
-View(
-ut_counties_sf %>%
-  select(name.x, pct_telework_ACS17_21) %>%
-  arrange(desc(pct_telework_ACS17_21))
-)
-
 ```
 
 ```{r make-broadband-map, eval = FALSE}
@@ -300,7 +295,7 @@ broadband_map <- ggplot() +
     legend.position = "top",                                   # move legend above map
     legend.text = element_text(size = 8),                      # size legend title text
     legend.margin = margin(10, 6, 6, 4),                       # add cushion
-     plot.margin = margin(10, 0, 0, 0)
+    plot.margin = margin(10, 0, 0, 0)
   ) 
 
 ```
