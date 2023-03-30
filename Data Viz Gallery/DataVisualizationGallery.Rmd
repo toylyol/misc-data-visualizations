@@ -454,8 +454,6 @@ Of the breakfast items listed, the Big Breakfast (with or without hotcakes) has 
 
 # Retrieve subset of Multiple Chronic Conditions (MCC) dataset using CMS API ----
 # 
-# library(jsonlite)
-# 
 # url <- "https://data.cms.gov/data-api/v1/dataset/15b08729-6ea2-4789-bf1a-b96b1da8338f/data?filter[Bene_Demo_Lvl][value]=Sex&filter[Bene_Geo_Lvl][value]=State"
 # 
 # mcc_data <-  jsonlite::fromJSON(url)
